@@ -1,8 +1,11 @@
-## tool-proxy
+# tool-proxy
 
-set global proxy
-support npm, git
+set system global proxy
 
+support:
+`npm` `git`
+
+```cmd
 Usage: toolProxy [options]
 
     Options:
@@ -12,3 +15,4 @@ Usage: toolProxy [options]
         set xx.xx.xx.xx     set global proxy address
         status              show proxy status
         --version, -V       show version
+```
