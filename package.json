@@ -1,0 +1,24 @@
+{
+  "name": "tool-proxy",
+  "version": "1.0.0",
+  "description": "global tool proxy set",
+  "main": "index.js",
+  "bin": {
+    "toolProxy": "./bin/toolProxy.js"
+  },
+  "keywords": [
+    "tool-proxy",
+    "git",
+    "npm",
+    "proxy"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lienviws/tool-proxy"
+  },
+  "author": "lienviws",
+  "license": "ISC",
+  "dependencies": {
+    "conf": "^2.2.0"
+  }
+}
