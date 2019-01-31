@@ -1,3 +1,5 @@
+const chalk = require('chalk')
+
 const checkTool = require('./checkTool')
 const utils = require('./utils.js')
 const store = require('./store.js')
@@ -12,6 +14,11 @@ const PARAMS = {
 }
 
 async function start () {
+    if (typeof store.getProxyAddr() === 'undefined') {
+        console.log('you should set proxy first')
+        console.log('like: ' + chalk.green('toolProxy set 127.0.0.1:8899'))
+        return
+    }
     try {
         await cmd.start()
         store.setStatusOn()
@@ -57,7 +64,7 @@ function showHelp () {
 function showStatus () {
     let status = `
     proxyAddr: ${store.getProxyAddr()}
-    proxy: ${store.getStatus()}
+    proxy: ${chalk.green(store.getStatus())}
     supported:
         ${store.getSupportTool().join(', ')}
     `
