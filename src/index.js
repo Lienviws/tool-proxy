@@ -5,22 +5,22 @@ const utils = require('./utils.js')
 const store = require('./store.js')
 const cmd = require('./cmd.js')
 
-const PARAMS = {
-    START: 'start',
-    STOP: 'stop',
-    SET: 'set',
-    STATUS: 'status',
-    VERSION: ['-V', '--version']
-}
+const cmdMap = new Map([
+    ['START', 'start'],
+    ['STOP', 'stop'],
+    ['SET', 'set'],
+    ['STATUS', 'status'],
+    ['VERSION', ['-V', '--version']],
+])
 
-async function start () {
+async function start (options) {
     if (typeof store.getProxyAddr() === 'undefined') {
         console.log('you should set proxy first')
         console.log('like: ' + chalk.green('toolProxy set 127.0.0.1:8899'))
         return
     }
     try {
-        await cmd.start()
+        await cmd.start(options)
         store.setStatusOn()
         console.log(`${store.getSupportTool().join(' & ')} proxy on, at ${store.getProxyAddr()}`)
     } catch (error) {
@@ -38,7 +38,7 @@ async function stop () {
     }
 }
 
-function setConf (value) {
+function setConf ([ value ] = []) {
     store.setProxyAddr(value)
     console.log('set success, new proxy address is ' + store.getProxyAddr())
 }
@@ -50,9 +50,10 @@ function showHelp () {
     let help = `
     Usage: toolProxy [options]
 
-    Options:
+    options:
 
         start               start all proxy
+                                [--npmTool <toolName>] [--git]
         stop                stop all proxy
         set xx.xx.xx.xx     set global proxy address
         status              show proxy status
@@ -78,17 +79,17 @@ function showVersion () {
 checkTool()
 
 module.exports = function () {
-    let argsProcess = new utils.ProcessArgs(PARAMS)
-    argsProcess.resolve((type, value) => {
+    let argsProcess = new utils.ProcessArgs(cmdMap)
+    argsProcess.resolve((type, { args = [], ...options } = {}) => {
         switch (type) {
             case 'START':
-                start()
+                start(options)
                 break;
             case 'STOP':
                 stop()
                 break;
             case 'SET':
-                setConf(value)
+                setConf(args)
                 break;
             case 'STATUS':
                 showStatus()

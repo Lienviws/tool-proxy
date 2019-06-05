@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-const entry = require('../src/index')
+const entry = require('../index')
 
-entry()
+// entry()

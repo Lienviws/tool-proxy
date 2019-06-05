@@ -1,0 +1,27 @@
+{
+  "npm": {
+    "start": [
+      "<% tool %> config set proxy http://<% proxy %>",
+      "<% tool %> config set https-proxy http://<% proxy %>",
+      "<% tool %> config set strict-ssl=false"
+    ],
+    "stop": [
+      "<% tool %> config delete proxy",
+      "<% tool %> config delete https-proxy",
+      "<% tool %> config set strict-ssl=true"
+    ],
+    "alias": [
+      "cnpm"
+    ]
+  },
+  "git": {
+    "start": [
+      "<% tool %> config --global http.proxy <% proxy %>",
+      "<% tool %> config --global http.sslVerify false"
+    ],
+    "stop": [
+      "<% tool %> config --global --unset http.proxy",
+      "<% tool %> config --global --unset http.sslVerify"
+    ]
+  }
+}

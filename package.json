@@ -16,10 +16,19 @@
     "type": "git",
     "url": "git+https://github.com/Lienviws/tool-proxy"
   },
+  "scripts": {
+    "build:json": "js-yaml template.yaml > template.json",
+    "test": "jest"
+  },
   "author": "lienviws",
   "license": "ISC",
   "dependencies": {
     "chalk": "^2.4.2",
+    "commander": "^2.20.0",
     "conf": "^2.2.0"
+  },
+  "devDependencies": {
+    "jest": "^24.0.0",
+    "js-yaml": "^3.13.1"
   }
 }

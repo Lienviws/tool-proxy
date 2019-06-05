@@ -2,46 +2,86 @@ const { exec } = require('child_process')
 
 const utils = require('./utils')
 const store = require('./store')
+const npmCache = {}
 
-const CMD = {
-    gitProxy: 'git config --global http.proxy ',
-    gitDisableSSL: 'git config --global http.sslVerify false',
-    gitUnProxy: 'git config --global --unset http.proxy',
-    gitDefaultSSL: 'git config --global --unset http.sslVerify',
-    npmProxy: 'npm config set proxy http://',
-    npmDisableSSL: 'npm config set strict-ssl=false',
-    npmUnProxy: 'npm config delete proxy',
-    npmDefaultSSL: 'npm config set strict-ssl=true',
+function getGitCMD () {
+    return {
+        proxy: 'git config --global http.proxy ',
+        disableSSL: 'git config --global http.sslVerify false',
+        unProxy: 'git config --global --unset http.proxy',
+        defaultSSL: 'git config --global --unset http.sslVerify',
+    }
+}
+
+function getNpmCMD (toolName) {
+    if (npmCache[toolName]) return npmCache[toolName]
+    const CMD = {
+        proxy: '<% toolName %> config set proxy http://',
+        httpsProxy: '<% toolName %> config set https-proxy http://',
+        disableSSL: '<% toolName %> config set strict-ssl=false',
+        unProxy: '<% toolName %> config delete proxy',
+        unHttpsProxy: '<% toolName %> config delete https-proxy',
+        defaultSSL: '<% toolName %> config set strict-ssl=true',
+    }
+    const res = {}
+    for (const [key, value] of Object.entries(CMD)) {
+        res[key] = value.replace(/<%\s*toolName\s*%>/, toolName)
+    }
+    Object.assign(npmCache, {
+        toolName: res
+    })
+    return res
 }
 
 /**
- * enable proxy cmd
+ * enable git proxy cmd
  */
-function getProxyCmd () {
+function getGitProxyCmd () {
     const proxy = store.getProxyAddr()
 
     return [
-        CMD.gitProxy + proxy,
-        CMD.gitDisableSSL,
-        CMD.npmProxy + proxy,
-        CMD.npmDisableSSL,
+        getGitCMD().proxy + proxy,
+        getGitCMD().disableSSL,
     ]
 }
 
 /**
- * disable proxy cmd
+ * enable npm proxy cmd
  */
-function getUnProxyCmd () {
+function getNpmProxyCmd (toolName = 'npm') {
+    const proxy = store.getProxyAddr()
+
     return [
-        CMD.gitUnProxy,
-        CMD.gitDefaultSSL,
-        CMD.npmUnProxy,
-        CMD.npmDefaultSSL,
+        getNpmCMD(toolName).proxy + proxy,
+        getNpmCMD(toolName).httpsProxy + proxy,
+        getNpmCMD(toolName).disableSSL,
+    ]
+}
+
+/**
+ * disable git proxy cmd
+ */
+function getGitUnProxyCmd () {
+    return [
+        getGitCMD().unProxy,
+        getGitCMD().defaultSSL,
+    ]
+}
+
+/**
+ * disable npm proxy cmd
+ */
+function getNpmUnProxyCmd (toolName = 'npm') {
+    return [
+        getNpmCMD(toolName).unProxy,
+        getNpmCMD(toolName).unHttpsProxy,
+        getNpmCMD(toolName).defaultSSL,
     ]
 }
 
 function doCmd (array = []) {
-    return Promise.all(array.map(cmd => new Promise((resolve, reject) => {
+    let cmd = array.join(' && ')
+    return new Promise((resolve, reject) => {
         let resolveFn = utils.resolveCount(2, resolve)
         let child_process = exec(cmd, (error, stdout, stderr) => {
             stderr ? reject(stderr) : resolveFn()
@@ -49,14 +89,55 @@ function doCmd (array = []) {
         child_process.on('exit', ()=> {
             resolveFn()
         })
-    })))
+    })
 }
 
-exports.start = function () {
-    return doCmd(getProxyCmd())
+exports.start = function ({
+    npmTool,
+    git
+} = {}) {
+    let cmdList = []
+    let saveObj = store.getActivedTool()
+
+    if (npmTool) {
+        cmdList = [...cmdList, ...getNpmProxyCmd(npmTool)]
+        saveObj.npm.push(npmTool)
+    }
+    if (git) {
+        cmdList = [...cmdList, ...getGitProxyCmd()]
+        saveObj.git = true
+    }
+    if (!npmTool && !git) {
+        cmdList = [...cmdList, ...getNpmProxyCmd(), ...getGitProxyCmd()]
+        saveObj.npm.push('npm')
+        saveObj.git = true
+    }
+    
+    store.setActivedTool('npm', ['npm', 'cnpm'])
+    store.setActivedTool('git', true)
+    return new Promise((resolve, reject) => {
+        doCmd(cmdList).then((res) => {
+
+            resolve(res)
+        }).catch(err => {
+            reject(err)
+        })
+    })
+    return 
 }
 exports.stop = function () {
-    return doCmd(getUnProxyCmd())
+    let cmdList = []
+    let {npm: npmTool, git: gitTool} = store.getActivedTool()
+
+    for (const toolName of npmTool) {
+        cmdList = [...cmdList, ...getNpmUnProxyCmd(toolName)]
+    }
+
+    if (gitTool) {
+        cmdList = [...cmdList, ...getGitUnProxyCmd()]
+    }
+
+    return doCmd(cmdList)
 }
 exports.setConf = function (addr) {
     return store.setProxyAddr(addr)
